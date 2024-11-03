@@ -46,7 +46,10 @@ def main():
     variable_weight = args.variable_weight
     set_seed(seed)
   
-    device = 'cuda'
+    if torch.cuda.is_available() and args.gpu:
+        device = 'cuda'
+    else:
+        device = 'cpu'
     avg_auc1, avg_aupr1 = 0, 0
     avg_auc2, avg_aupr2 = 0, 0
     # drug_attr = io.loadmat('./data/feature.mat')['feature']\
@@ -95,7 +98,7 @@ def main():
         # break
         # ###########################################################
         incidence = construct_incidence(train_data)
-        model = HGCNDR(drug_similarity, disease_similarity, embed_dim1, embed_dim2, incidence, layer_num, k=k, variable_weight=variable_weight, order=order, mode=mode, device='cuda',score='mlp').to(device)
+        model = HGCNDR(drug_similarity, disease_similarity, embed_dim1, embed_dim2, incidence, layer_num, k=k, variable_weight=variable_weight, order=order, mode=mode, device=device,score='mlp').to(device)
 
 
         optimizer = Adam(model.parameters(), lr=lr)

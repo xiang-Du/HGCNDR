@@ -7,7 +7,7 @@ from torch.optim import Adam
 from procedure import train, test, case
 from utils import set_seed, construct_incidence, k_fold_split, bpr_loss_fn, get_valid_set
 import numpy as np
-
+import torch
 
 
 
@@ -27,7 +27,10 @@ def main():
     k = args.k
     variable_weight = args.variable_weight
     set_seed(seed)
-    device = 'cuda'
+    if torch.cuda.is_available() and args.gpu:
+        device = 'cuda'
+    else:
+        device = 'cpu'
     avg_auc, avg_aupr = 0, 0
     # drug_attr = io.loadmat('./data/feature.mat')['feature']\
     data_path = './data/Gdataset.mat'
@@ -50,7 +53,7 @@ def main():
         train_data_loader = DataLoader(
             dd_train_set, batch_size=len(dd_train_set), shuffle=True)
         incidence = construct_incidence(train_data)
-        model = HGCNDR(drug_similarity, disease_similarity, embed_dim1, embed_dim2, incidence, layer_num, k=k, variable_weight=variable_weight, order=order, mode=mode, device='cuda',score='mlp').to(device)
+        model = HGCNDR(drug_similarity, disease_similarity, embed_dim1, embed_dim2, incidence, layer_num, k=k, variable_weight=variable_weight, order=order, mode=mode, device=device, score='mlp').to(device)
 
         optimizer = Adam(model.parameters(), lr=lr)
         # scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[0.3 * epoch, 0.6 * epoch, 0.8 * epoch], gamma=0.8)
@@ -58,7 +61,7 @@ def main():
         for i in range(epoch): 
             loss, auc, aupr = train(model, train_data_loader, optimizer,loss_fn, rg, device)
             # scheduler.step()
-            if (i+1) % 10 == 0:
+            if (i+1) % 100 == 0:
                 print(loss, auc, aupr)
         
                 auc, aupr, _, _ = test(model, valid_data_loader, device)
